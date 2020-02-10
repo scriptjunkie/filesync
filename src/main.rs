@@ -1,11 +1,9 @@
-use std::fs::File;
-use std::fs::OpenOptions;
+use std::fs::*;
 use std::io::prelude::*;
 use std::io::SeekFrom;
-use std::env;
 fn main() -> std::io::Result<()> {
     let mut buf = [0; 16384];
-    let mut args = env::args();
+    let mut args = std::env::args();
     if args.len() < 3 {
         eprintln!("Usage: filesync srcfile dstfile");
         return Ok(());
@@ -23,19 +21,19 @@ fn main() -> std::io::Result<()> {
         if s == 0 {
             break;
         }
-        offset += s as u64;
         let hash = blake3::hash(&buf[..s]);
         let mut partialhash = [0; 32];
         if if let Ok(_) = hashfile.read_exact(&mut partialhash) {
             blake3::Hash::from(partialhash) != hash
         } else {true} {
-            println!("{} bytes hash mismatch at {}", s, offset - s as u64);
+            println!("{} bytes hash mismatch at {}", s, offset);
             output.seek(SeekFrom::Start(offset))?;
             output.write_all(&buf[..s])?;
             hashfile.seek(SeekFrom::Start(hashoffset))?;
             hashfile.write_all(hash.as_bytes())?;
             println!("Wrote {} bytes and hash", s);
         }
+        offset += s as u64;
         hashoffset += partialhash.len() as u64;
     }
     Ok(())
