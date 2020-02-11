@@ -23,9 +23,8 @@ fn main() -> std::io::Result<()> {
         }
         let hash = blake3::hash(&buf[..s]);
         let mut partialhash = [0; 32];
-        if if let Ok(_) = hashfile.read_exact(&mut partialhash) {
-            blake3::Hash::from(partialhash) != hash
-        } else {true} {
+        if hashfile.read_exact(&mut partialhash).is_err() || blake3::Hash::from(partialhash) != hash
+        {
             println!("{} bytes hash mismatch at {}", s, offset);
             output.seek(SeekFrom::Start(offset))?;
             output.write_all(&buf[..s])?;
